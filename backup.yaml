@@ -1,0 +1,37 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  labels:
+    jobgroup: postgres-backup
+spec:
+  # Backup the database every day at 12AM
+  # schedule: "0 0 0 ? * * *"
+  schedule: "* * * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    metadata:
+      name: postgres-backup
+      labels:
+        jobgroup: postgres-backup
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            "db-postgresql-ha-client": "true"
+        spec:
+          containers:
+          - name: postgres-backup
+            image: ifine/backup:v2
+            imagePullPolicy: Always
+            envFrom:
+              - secretRef: 
+                  name: app-secrets
+          restartPolicy: Never
+          nodeSelector:
+            kubernetes.io/os: linux
+
